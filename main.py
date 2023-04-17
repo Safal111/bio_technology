@@ -195,18 +195,30 @@ class Use_of_Bio_Technology:
                 )
                 my_cursor = conn.cursor()
 
+                print("ID before conversion:", id)
                 my_cursor.execute("select id from student where id=" + str(id))
                 i = my_cursor.fetchone()
+                if i is not None:
+                    i = str(i[0])
+                else:
+                    i = "unknown"
+
+                print("ID after query:", i)
+
                 # i = str(i)
 
                 my_cursor.execute("select name from student where id=" + str(id))
                 n = my_cursor.fetchone()
+                if n is not None:
+                    n = str(n[0])
+                else:
+                    n = ""
                 # n = str(n)
 
                 if confidence > 77:
                     cv2.putText(
                         img,
-                        f"ID: {i[0]}",
+                        f"ID: {i}",
                         (x, y - 50),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.8,
@@ -216,7 +228,7 @@ class Use_of_Bio_Technology:
                     )
                     cv2.putText(
                         img,
-                        f"Name: {n[0]}",
+                        f"Name: {n}",
                         (x, y - 15),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.8,
@@ -263,7 +275,7 @@ class Use_of_Bio_Technology:
             if key == ord("q") or key == ord("Q"):
                 break
 
-        # video_cap.release()
+        video_cap.release()
         cv2.destroyAllWindows()
 
 

@@ -565,6 +565,7 @@ class Students:
         self.var_radio.set("")
 
     # take photo
+
     face_classifier = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
     def take_photo(self):
@@ -581,12 +582,12 @@ class Students:
                 my_cursor = conn.cursor()
                 my_cursor.execute("select * from student")
                 myresult = my_cursor.fetchall()
-                # id = len(myresult)
-                id = 0  # added now
+                id = len(myresult)
+                # id = 0  # added now
                 for x in myresult:
-                    # if x[0] == id:
+                    if x[0] == id:
+                        id += 1
                     # id += 1
-                    id += 1
                     my_cursor.execute(
                         "update student set course=%s, year=%s, semester=%s, name=%s, dob=%s, email=%s, phone=%s, address=%s, photo=%s where id=%s",
                         (
