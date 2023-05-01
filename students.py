@@ -1,14 +1,15 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-import mysql.connector
 import cv2
+
+from db import get_connection
 
 
 class Students:
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1400x700+60+30")
+        self.root.geometry("1500x720+10+30")
         self.root.title("Use of Bio Technology in Face Recognition Attendance System")
 
         # Variables
@@ -42,7 +43,7 @@ class Students:
 
         # Body Frame
         body_frame = Frame(self.root, bg=bg_color)
-        body_frame.place(x=50, y=100, width=1300, height=580)
+        body_frame.place(x=50, y=100, width=1400, height=600)
 
         # left label frame
         left_frame = LabelFrame(
@@ -54,7 +55,7 @@ class Students:
             bg=bg_color,
             fg="#4A4A4A",
         )
-        left_frame.place(x=10, y=10, width=650, height=555)
+        left_frame.place(x=10, y=10, width=600, height=575)
 
         # current course
         current_course_label = Label(
@@ -318,7 +319,7 @@ class Students:
             bg=bg_color,
             fg="#4A4A4A",
         )
-        right_frame.place(x=670, y=10, width=620, height=555)
+        right_frame.place(x=630, y=10, width=750, height=575)
 
         # search by
         style = ttk.Style()
@@ -343,18 +344,18 @@ class Students:
         search_button.grid(row=7, column=1, padx=5)
         search_button.place(x=342, y=20)
 
-        # semester
-        semester_combo = ttk.Combobox(
+        # sort by
+        sort_by_combo = ttk.Combobox(
             right_frame, font=("Arial", 10), width=10, state="readonly"
         )
-        semester_combo["values"] = ("Sort By:", "Name", "ID", "Course", "Year")
-        semester_combo.current(0)
-        semester_combo.grid(row=2, column=1, padx=10, pady=10, sticky="w")
-        semester_combo.place(x=460, y=22)
+        sort_by_combo["values"] = ("Sort By:", "Name", "ID", "Course", "Year")
+        sort_by_combo.current(0)
+        sort_by_combo.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+        sort_by_combo.place(x=620, y=22)
 
         # table frame
         table_frame = Frame(right_frame, bd=2, relief=RIDGE, bg="white")
-        table_frame.place(x=8, y=80, width=600, height=445)
+        table_frame.place(x=8, y=80, width=730, height=465)
 
         scroll_x = ttk.Scrollbar(table_frame, orient=HORIZONTAL)
         scroll_y = ttk.Scrollbar(table_frame, orient=VERTICAL)
@@ -399,18 +400,13 @@ class Students:
         self.student_table.bind("<ButtonRelease-1>", self.get_cursor)
         self.fetch_data()
 
-    # Function Declaration
+    # Function to add student
     def add_students(self):
         if self.var_course.get() == "Select":
             messagebox.showerror("Error", "All fields are required", parent=self.root)
         else:
             try:
-                conn = mysql.connector.connect(
-                    host="localhost",
-                    username="root",
-                    password="",
-                    database="bio_technology",
-                )
+                conn = get_connection()
                 my_cursor = conn.cursor()
                 my_cursor.execute(
                     "insert into student values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
@@ -438,9 +434,7 @@ class Students:
 
     # fetch data
     def fetch_data(self):
-        conn = mysql.connector.connect(
-            host="localhost", username="root", password="", database="bio_technology"
-        )
+        conn = get_connection()
         my_cursor = conn.cursor()
         my_cursor.execute("select * from student")
         data = my_cursor.fetchall()
@@ -457,16 +451,17 @@ class Students:
         content = self.student_table.item(cursor_focus)
         data = content["values"]
 
-        self.var_id.set(data[0])
-        self.var_course.set(data[1])
-        self.var_year.set(data[2])
-        self.var_semester.set(data[3])
-        self.var_name.set(data[4])
-        self.var_dob.set(data[5])
-        self.var_email.set(data[6])
-        self.var_phone.set(data[7])
-        self.var_address.set(data[8])
-        self.var_radio.set(data[9])
+        if len(data) >= 10:
+            self.var_id.set(data[0])
+            self.var_course.set(data[1])
+            self.var_year.set(data[2])
+            self.var_semester.set(data[3])
+            self.var_name.set(data[4])
+            self.var_dob.set(data[5])
+            self.var_email.set(data[6])
+            self.var_phone.set(data[7])
+            self.var_address.set(data[8])
+            self.var_radio.set(data[9])
 
     # update data
     def update_data(self):
@@ -478,12 +473,7 @@ class Students:
                     "Update", "Do you want to update this student", parent=self.root
                 )
                 if update > 0:
-                    conn = mysql.connector.connect(
-                        host="localhost",
-                        username="root",
-                        password="",
-                        database="bio_technology",
-                    )
+                    conn = get_connection()
                     my_cursor = conn.cursor()
                     my_cursor.execute(
                         "update student set course=%s, year=%s, semester=%s, name=%s, dob=%s, email=%s, phone=%s, address=%s, photo=%s where id=%s",
@@ -527,12 +517,7 @@ class Students:
                     parent=self.root,
                 )
                 if delete > 0:
-                    conn = mysql.connector.connect(
-                        host="localhost",
-                        username="root",
-                        password="",
-                        database="bio_technology",
-                    )
+                    conn = get_connection()
                     my_cursor = conn.cursor()
                     sql = "delete from student where id=%s"
                     val = (self.var_id.get(),)
@@ -565,7 +550,6 @@ class Students:
         self.var_radio.set("")
 
     # take photo
-
     face_classifier = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
     def take_photo(self):
@@ -573,12 +557,7 @@ class Students:
             messagebox.showerror("Error", "All fields are required", parent=self.root)
         else:
             try:
-                conn = mysql.connector.connect(
-                    host="localhost",
-                    username="root",
-                    password="",
-                    database="bio_technology",
-                )
+                conn = get_connection()
                 my_cursor = conn.cursor()
                 my_cursor.execute("select * from student")
                 myresult = my_cursor.fetchall()
@@ -600,7 +579,7 @@ class Students:
                             self.var_phone.get(),
                             self.var_address.get(),
                             self.var_radio.get(),
-                            self.var_id.get() == id + 1,
+                            self.var_id.set(id + 1),
                         ),
                     )
                     conn.commit()

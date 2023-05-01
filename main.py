@@ -5,15 +5,18 @@ import cv2
 import os
 import numpy as np
 from tkinter import messagebox
-import mysql.connector
+from time import strftime
+from datetime import datetime
 
 from students import Students
+from attendence import Attendence
+from db import get_connection
 
 
 class Use_of_Bio_Technology:
     def __init__(self, root):
         self.root = root
-        self.root.geometry("1400x700+60+30")
+        self.root.geometry("1500x720+10+30")
         self.root.title("Use of Bio Technology in Face Recognition Attendance System")
 
         # Background color
@@ -35,7 +38,7 @@ class Use_of_Bio_Technology:
 
         # Body Frame
         body_frame = Frame(self.root, bg=bg_color)
-        body_frame.place(x=50, y=100, width=1300, height=520)
+        body_frame.place(x=50, y=100, width=1400, height=550)
 
         # Students Details Button
         # students_img = Image.open("images/abc.png")
@@ -80,7 +83,7 @@ class Use_of_Bio_Technology:
             cursor="hand2",
             command=self.face_recognition,
         )
-        detection_button.place(x=400, y=100)
+        detection_button.place(x=445, y=100)
 
         # Train Data Button
         # train_img = Image.open(
@@ -103,7 +106,7 @@ class Use_of_Bio_Technology:
             cursor="hand2",
             command=self.train_data,
         )
-        train_button.place(x=700, y=100)
+        train_button.place(x=790, y=100)
 
         # Attendance Button
         # attendance_img = Image.open(
@@ -124,12 +127,13 @@ class Use_of_Bio_Technology:
             padx=10,
             pady=10,
             cursor="hand2",
+            command=self.attendance_detail_button,
         )
-        attendance_button.place(x=1000, y=100)
+        attendance_button.place(x=1135, y=100)
 
         # Footer Frame
         footer_frame = Frame(self.root, bg="#4A4A4A", bd=5)
-        footer_frame.place(x=0, y=650, relwidth=1, height=50)
+        footer_frame.place(x=0, y=670, relwidth=1, height=50)
 
         # Footer Label
         footer_label = Label(
@@ -145,6 +149,11 @@ class Use_of_Bio_Technology:
     def students_detail_button(self):
         self.new_window = Toplevel(self.root)
         self.app = Students(self.new_window)
+
+    # function for attendance button
+    def attendance_detail_button(self):
+        self.new_window = Toplevel(self.root)
+        self.app = Attendence(self.new_window)
 
     # train data
     def train_data(self):
@@ -171,6 +180,23 @@ class Use_of_Bio_Technology:
         clf.write("classifier.xml")
         cv2.destroyAllWindows()
         messagebox.showinfo("Result", "Training dataset completed!!")
+        for file in os.listdir("data"):
+            if file.endswith(".jpg"):
+                os.remove(os.path.join("data", file))
+
+    # attendance Sheet
+    def mark_attendance(self, i, n, c, s, e):
+        with open("attendence.csv", "r+", newline="\n") as f:
+            myDataList = f.readlines()
+            name_list = []
+            for line in myDataList:
+                entry = line.split((","))
+                name_list.append(entry[0])
+            if i not in name_list and n not in name_list:
+                now = datetime.now()
+                d1 = now.strftime("%d/%m/%Y")
+                dtString = now.strftime("%H:%M:%S")
+                f.writelines(f"\n{i},{n},{c},{s},{e},{dtString},{d1},Present")
 
     # face recognition
     def face_recognition(self):
@@ -187,15 +213,10 @@ class Use_of_Bio_Technology:
                 id, predict = clf.predict(gray_image[y : y + h, x : x + w])
                 confidence = int((100 * (1 - predict / 300)))
 
-                conn = mysql.connector.connect(
-                    host="localhost",
-                    username="root",
-                    password="",
-                    database="bio_technology",
-                )
+                conn = get_connection()
                 my_cursor = conn.cursor()
 
-                print("ID before conversion:", id)
+                # print("ID before conversion:", id)
                 my_cursor.execute("select id from student where id=" + str(id))
                 i = my_cursor.fetchone()
                 if i is not None:
@@ -203,7 +224,7 @@ class Use_of_Bio_Technology:
                 else:
                     i = "unknown"
 
-                print("ID after query:", i)
+                # print("ID after query:", i)
 
                 # i = str(i)
 
@@ -214,6 +235,27 @@ class Use_of_Bio_Technology:
                 else:
                     n = ""
                 # n = str(n)
+
+                my_cursor.execute("select course from student where id=" + str(id))
+                c = my_cursor.fetchone()
+                if c is not None:
+                    c = str(c[0])
+                else:
+                    c = ""
+
+                my_cursor.execute("select semester from student where id=" + str(id))
+                s = my_cursor.fetchone()
+                if s is not None:
+                    s = str(s[0])
+                else:
+                    s = ""
+
+                my_cursor.execute("select email from student where id=" + str(id))
+                e = my_cursor.fetchone()
+                if e is not None:
+                    e = str(e[0])
+                else:
+                    e = ""
 
                 if confidence > 77:
                     cv2.putText(
@@ -236,6 +278,8 @@ class Use_of_Bio_Technology:
                         1,
                         cv2.LINE_AA,
                     )
+
+                    self.mark_attendance(i, n, c, s, e)
 
                 else:
                     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 225), 3)
